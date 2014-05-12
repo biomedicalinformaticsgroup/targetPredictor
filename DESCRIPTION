@@ -1,0 +1,10 @@
+Package: targetPredictor
+Type: Package
+Title: Integration of miRNA target predictions from multiple sources
+Version: 0.99
+Date: 2014-03-24
+Author: Maciej Pajak
+Maintainer: Maciej Pajak <m.pajak@sms.ed.ac.uk>
+Description: Integrating miRNA target predictions from multiple sources
+License: GPL 2
+Depends: R (>= 2.14.0), stringr, RSQLite, plyr, targetPredictor.db
