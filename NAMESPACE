@@ -1,2 +1,5 @@
-export(getPredictedTargets)
-export(merge_rename)
+import(stringr) 
+import(RSQLite) 
+import(plyr)
+import(targetPredictor.db)
+exportPattern("^[[:alpha:]]+")

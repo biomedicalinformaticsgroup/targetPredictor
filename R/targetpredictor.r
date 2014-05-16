@@ -226,6 +226,7 @@ getPredictedTargets = function(mirna,sources=c('pictar','diana','targetscan','mi
 #'
 #' This function is not meant to be called directly by the user
 #'
+#' @param ... parameters to merge
 #' @export
 #' @author Maciej Pajak \email{m.pajak@@sms.ed.ac.uk}	
 merge_rename = function(...) {

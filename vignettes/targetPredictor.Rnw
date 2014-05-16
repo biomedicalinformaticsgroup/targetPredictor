@@ -1,0 +1,111 @@
+%\VignetteIndexEntry{targetPredictor}
+%\VignetteKeywords{targetPredictor, miRNA, targets}
+%\VignettePackage{targetPredictor}
+
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amscd}
+\usepackage[tableposition=top]{caption}
+\usepackage{ifthen}
+\usepackage[utf8]{inputenc}
+
+
+\usepackage{Sweave}
+\SweaveOpts{prefix.string = tP}
+
+
+\begin{document}
+
+\title{targetPredictor use}
+\author{Maciej Pajak}
+\maketitle
+\tableofcontents
+\newpage
+
+
+\section{Introduction}
+{\tt targetPredictor} package is designed to facilitate implementation of workflows requiring miRNA prediction
+Aggregation of commonly used prediction algorith outputs in a way that improves on performance of every single one of them (ref!!)
+microRNA (miRNA) is a 18-22nt long single strand that binds with RISC (RNA induced silencing complex) and targets mRNAs effectively reducing their translation rates.
+
+Programmatic access to sources of data is of crucial importance when streamlining the workflow of our analysis, this way we can run similar analysis for multiple input miRNAs or any other parameters.
+Not only does it allow us to obtain predictions from multiple sources straight into R but also through aggregation of sources it improves the quality of predictions.
+
+
+\section{Installation}
+
+This section briefly describes the necessary steps to get {\tt targetPredictor} running on your system. We assume that the user has the R program (see the R project at http://www.r-project.org) already installed and is familiar with it. 
+You will need to have R 2.14.0 or later to be able to install and run {\tt targetPredictor}.
+The targetPredictor package is available from the Bioconductor repository at http://www.bioconductor.org To be
+able to install the package one needs first to install the core Bioconductor packages. If you have already
+installed Bioconductor packages on your system then you can skip the two lines below.
+
+<<eval = FALSE>>=
+source("http://bioconductor.org/biocLite.R")
+biocLite()
+@
+
+Once the core Bioconductor packages are installed, we can install the targetPredictor package by
+
+<<eval = FALSE>>=
+source("http://bioconductor.org/biocLite.R")
+biocLite("targetPredictor")
+@
+
+\section{Workflow}
+
+This section explains how targetPredictor package can be integrated in the workflow aimed at predicting which processes can be regulated by a given microRNA.
+
+In this example workflow we'll use targetPredictor as well as another Bioconductor package topGO
+In case we don't have topGO on our machine we need to install it first:
+
+<<eval = FALSE>>=
+source("http://bioconductor.org/biocLite.R")
+biocLite("topGO")
+@
+
+Then, let's load the required libraries
+
+<<results = hide>>=
+library(targetPredictor)
+library(topGO)
+@
+
+Now we can start the analysis, we will obtain predicted targets for human miRNA miR-19a (whatever, which one shall i choose!!)
+
+<<>>=
+mir = 'miR-19a'
+predictions = getPredictedTargets(mir, species = 'hsa', method = 'geom', min_src = 2)
+@
+
+Let's inspect the top of the prediction list.
+
+<<>>=
+head(predictions)
+@
+
+We are using geometric mean aggregation method as it proves best when tested against experimental data (ref!!). 
+
+Now we can use the ranked results as input to Gene Ontology (GO) analysis.
+
+
+
+In order to make use of the rank information we will use Kolomonogorov Smirnov (K-S) test instead of Fisher exact test.
+
+
+
+
+For more details about GO analysis refer to topGO package vignette(ref!!).
+
+In a similar way we can use our predictions for pathway enrichment analysis based around KEGG.
+\section{Session Information}
+
+<<>>=
+sessionInfo()
+@
+
+\section*{References}
+
+\end{document}
+
