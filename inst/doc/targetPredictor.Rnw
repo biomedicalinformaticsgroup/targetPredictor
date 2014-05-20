@@ -87,6 +87,20 @@ head(predictions)
 
 We are using geometric mean aggregation method as it proves best when tested against experimental data (ref!!). 
 
+We can compare it to the output of mimumum method:
+
+<<>>=
+predictions_min = getPredictedTargets(mir, species = 'hsa', method = 'min', min_src = 2)
+head(predictions_min)
+@
+
+
+Where predictions for rat genes are not available we can obtain predictions for mouse genes and translate them into rat genes through homology. The operation happens automatically if we choose species as 'rno' (Rattus norvegicus)
+
+<<>>=
+predictions_rat = getPredictedTargets(mir, species = 'rno', method = 'geom', min_src = 2)
+@
+
 Now we can use the ranked results as input to Gene Ontology (GO) analysis.
 
 

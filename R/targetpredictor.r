@@ -14,18 +14,23 @@ require(targetPredictor.db) #DATA
 options(sqldf.driver = "SQLite") # as per FAQ #7 force SQLite
 options(gsubfn.engine = "R")
 
+## package documentation stub
 
-#####################
+#' @docType package
+#' @name targetPredictor
+#' @title targetPredictor
+#' @details package with tools to...
+#' @import plyr stringr targetPredictor.db
+NULL
+
+
 #####################
 #	MAIN FUNCTION
 #####################
-#####################
 
-
-
-#' Get aggregated ordered list of predicted targets for miRNA
+#' @title Get aggregated ordered list of predicted targets for miRNA
 #'
-#' This method performs aggregation of target lists from multiple sources.
+#' @details This method performs aggregation of target lists from multiple sources.
 #' Aggregated list is more accurate than any list from a single source.
 #' Multiple aggregation methods are available.
 #' 
@@ -51,7 +56,9 @@ options(gsubfn.engine = "R")
 #' @examples
 #' ##Not run:
 #' targets = getPredictedTargets('let-7a',species='mmu') 
-#' head(targets) #top of the list
+#' head(targets) #top of the list with minimum aggregation
+#' targets2 = getPredictedTargets('let-7a',species='mmu', method='geom') 
+#' head(targets2) #top of the list with geometric mean aggregation
 getPredictedTargets = function(mirna,sources=c('pictar','diana','targetscan','miranda'),species='mmu', min_src=2, method='min', promote=TRUE, ...) {
 	
 	if (!(species %in% c('mmu','hsa','rno','dme'))) {
@@ -219,12 +226,12 @@ getPredictedTargets = function(mirna,sources=c('pictar','diana','targetscan','mi
 
 
 #####################
-#	
+#	AUX
 #####################
 
-#' Auxiliary internal TargetPredictor functions
+#' @title Auxiliary internal TargetPredictor functions
 #'
-#' This function is not meant to be called directly by the user
+#' @details This function is not meant to be called directly by the user
 #'
 #' @param ... parameters to merge
 #' @export
