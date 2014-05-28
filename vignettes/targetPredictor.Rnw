@@ -8,8 +8,8 @@
 \usepackage{amscd}
 \usepackage[tableposition=top]{caption}
 \usepackage{ifthen}
+\usepackage{natbib}
 \usepackage[utf8]{inputenc}
-
 
 \usepackage{Sweave}
 \SweaveOpts{prefix.string = tP}
@@ -17,26 +17,30 @@
 
 \begin{document}
 
-\title{targetPredictor use}
-\author{Maciej Pajak}
+\title{{\bf targetPredictor} example use}
+\author{Maciej Pajak, Ian Simpson}
+\date{\today}
+  
 \maketitle
 \tableofcontents
 \newpage
 
 
 \section{Introduction}
-{\tt targetPredictor} package is designed to facilitate implementation of workflows requiring miRNA prediction
-Aggregation of commonly used prediction algorith outputs in a way that improves on performance of every single one of them (ref!!)
+{\tt targetPredictor} package is designed to facilitate implementation of workflows requiring miRNA prediction.
+Aggregation of commonly used prediction algorithm outputs in a way that improves on performance of every single one of them on their own when compared against experimentally derived targets.
 microRNA (miRNA) is a 18-22nt long single strand that binds with RISC (RNA induced silencing complex) and targets mRNAs effectively reducing their translation rates.
 
-Programmatic access to sources of data is of crucial importance when streamlining the workflow of our analysis, this way we can run similar analysis for multiple input miRNAs or any other parameters.
+Targets are aggregated from 4 most commonly cited prediction algorithms: DIANA \citep{Maragkakis2011}, Miranda \citep{Enright2003}, PicTar \citep{Lall2006} and TargetScan \citep{Friedman2009}.
+
+Programmatic access to sources of data is crucial when streamlining the workflow of our analysis, this way we can run similar analysis for multiple input miRNAs or any other parameters.
 Not only does it allow us to obtain predictions from multiple sources straight into R but also through aggregation of sources it improves the quality of predictions.
 
 
 \section{Installation}
 
 This section briefly describes the necessary steps to get {\tt targetPredictor} running on your system. We assume that the user has the R program (see the R project at http://www.r-project.org) already installed and is familiar with it. 
-You will need to have R 2.14.0 or later to be able to install and run {\tt targetPredictor}.
+You will need to have R 3.0.0 or later to be able to install and run {\tt targetPredictor}.
 The targetPredictor package is available from the Bioconductor repository at http://www.bioconductor.org To be
 able to install the package one needs first to install the core Bioconductor packages. If you have already
 installed Bioconductor packages on your system then you can skip the two lines below.
@@ -55,14 +59,15 @@ biocLite("targetPredictor")
 
 \section{Workflow}
 
-This section explains how targetPredictor package can be integrated in the workflow aimed at predicting which processes can be regulated by a given microRNA.
+This section explains how {\tt targetPredictor} package can be integrated in the workflow aimed at predicting which processes can be regulated by a given microRNA.
 
-In this example workflow we'll use targetPredictor as well as another Bioconductor package topGO
-In case we don't have topGO on our machine we need to install it first:
+In this example workflow we'll use {\tt targetPredictor} as well as another Bioconductor package {\tt topGO} together with Gene Ontology (GO) annotations. 
+In case we don't have {\tt topGO} or GO annotations on our machine we need to install them first:
 
 <<eval = FALSE>>=
 source("http://bioconductor.org/biocLite.R")
 biocLite("topGO")
+biocLite("org.Hs.eg.db")
 @
 
 Then, let's load the required libraries
@@ -70,12 +75,13 @@ Then, let's load the required libraries
 <<results = hide>>=
 library(targetPredictor)
 library(topGO)
+library(org.Hs.eg.db)
 @
 
-Now we can start the analysis, we will obtain predicted targets for human miRNA miR-19a (whatever, which one shall i choose!!)
+Now we can start the analysis. First, we will obtain predicted targets for human miRNA {\it miR-10b} 
 
 <<>>=
-mir = 'miR-19a'
+mir = 'miR-10b'
 predictions = getPredictedTargets(mir, species = 'hsa', method = 'geom', min_src = 2)
 @
 
@@ -85,27 +91,65 @@ Let's inspect the top of the prediction list.
 head(predictions)
 @
 
-We are using geometric mean aggregation method as it proves best when tested against experimental data (ref!!). 
+We are using {\it geometric mean} aggregation method as it proves to perform best when tested against experimental data from MirBase \citep{Griffiths-Jones2008}. 
 
-Now we can use the ranked results as input to Gene Ontology (GO) analysis.
-
-
-
-In order to make use of the rank information we will use Kolomonogorov Smirnov (K-S) test instead of Fisher exact test.
-
-
-
-
-For more details about GO analysis refer to topGO package vignette(ref!!).
-
-In a similar way we can use our predictions for pathway enrichment analysis based around KEGG.
-\section{Session Information}
+We can compare it to the top of the list of the output of {\it mimumum} method:
 
 <<>>=
-sessionInfo()
+predictions_min = getPredictedTargets(mir, species = 'hsa', method = 'min', min_src = 2)
+head(predictions_min)
 @
 
-\section*{References}
+
+Where predictions for rat genes are not available we can obtain predictions for mouse genes and translate them into rat genes through homology. 
+The operation happens automatically if we specify species as {\tt rno} (for {\it Rattus norvegicus})
+
+<<>>=
+predictions_rat = getPredictedTargets(mir, species = 'rno', method = 'geom', min_src = 2)
+@
+
+Now we can use the ranked results as input to GO enrichment analysis. For that we will 
+use our initial prediction for human {\it miR-10b}
+
+<<results = hide>>=
+rankedGenes = predictions[,'rank_product']
+selection = function(x) x<=max(rankedGenes)
+allGO2genes = annFUN.org(whichOnto='BP', feasibleGenes = NULL,
+ mapping="org.Hs.eg.db", ID = "entrez")
+GOdata =  new('topGOdata', ontology = 'BP', allGenes = rankedGenes, 
+annot = annFUN.GO2genes, GO2genes = allGO2genes, geneSel = selection, nodeSize=10)
+@
+
+In order to make use of the rank information we will use Kolomonogorov Smirnov (K-S) test instead of Fisher exact test which is based only on counts.
+
+<<>>=
+results.ks = runTest(GOdata, algorithm = "classic", statistic = "ks")
+results.ks
+@
+
+We can view the most enriched GO terms (and potentially feed them to further steps in our workflow)
+
+<<>>=
+allRes = GenTable(GOdata, KS = results.ks, orderBy = "KS", topNodes = 20)
+allRes[,c('GO.ID','Term','KS')]
+@
+
+For more details about GO analysis refer to {\tt topGO } package vignette \citep{topgo}.
+
+Finally, we can use our predictions in a similar way for pathway enrichment analysis based on KEGG \citep{Kanehisa2000}, for example using Bioconductor's {\tt KEGGprofile} \citep{keggprofile}.
+\section{Session Information}
+
+<<echo=FALSE,results=tex>>=
+toLatex(sessionInfo())
+@
+
+\addcontentsline{toc}{section}{References} \label{references}
+
+
+\bibliography{refs}
+\bibliographystyle{apalike}
+
+
 
 \end{document}
 
