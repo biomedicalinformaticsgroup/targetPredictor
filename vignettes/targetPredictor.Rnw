@@ -36,6 +36,8 @@ Targets are aggregated from 4 most commonly cited prediction algorithms: DIANA \
 Programmatic access to sources of data is crucial when streamlining the workflow of our analysis, this way we can run similar analysis for multiple input miRNAs or any other parameters.
 Not only does it allow us to obtain predictions from multiple sources straight into R but also through aggregation of sources it improves the quality of predictions.
 
+Finally, although direct predictions from all sources are only available for {\it Homo sapiens} and {\it Mus musculus}, this package includes an algorithm that allows to translate target genes to other speices (currently only {\it Rattus norvegicus}) using homology information where direct targets are not available.
+
 
 \section{Installation}
 

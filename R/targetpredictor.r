@@ -14,7 +14,7 @@ options(gsubfn.engine = "R")
 #' @title Integrating miRNA target predictions from multiple sources
 #' @details It is a package with tools to facilitate implementation of workflows requiring miRNA prediction through access to multiple prediction results (DIANA, Targetscan, PicTar and Miranda) and their aggregation. 
 #' Three aggregation methods are available: minimum, maximum and geometric mean, additional parameters provide further tuning of the results. 
-#' Predictions are available for Human, Mouse and Rat (the last one through homology translation).
+#' Predictions are available for Homo sapiens, Mus musculus and Rattus norvegicus (the last one through homology translation).
 #' @import plyr stringr targetPredictor.db
 #' @author Maciej Pajak \email{m.pajak@@sms.ed.ac.uk}, Ian Simpson 
 #' @examples
