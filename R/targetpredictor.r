@@ -67,7 +67,7 @@ getPredictedTargets <- function(mirna, sources=c('pictar','diana','targetscan','
     return(NULL)
   }
    
-  conL <- getTpConnection()
+  conL <- targetPredictor.db:::getTpConnection()
   n_sources <- length(sources)
   
   if (n_sources<min_src) {
@@ -99,7 +99,7 @@ getPredictedTargets <- function(mirna, sources=c('pictar','diana','targetscan','
   }
   
   #it creates non-unique colnames, hence warning surpression
-  merged.scores <- suppressWarnings(Reduce(function(...) mergeRename(..., by='GeneID', all=TRUE), l_outputs))
+  merged.scores <- suppressWarnings(Reduce(function(...) .mergeRename(..., by='GeneID', all=TRUE), l_outputs))
   
   if (dim(merged.scores)[1]<1) { # 
     warning(paste('no targets found for mirna ', mirna, sep = ''))
@@ -187,14 +187,11 @@ getPredictedTargets <- function(mirna, sources=c('pictar','diana','targetscan','
 #' @title Auxiliary internal TargetPredictor functions
 #'
 #' @details This function is not meant to be called directly by the user
-#'
 #' @param ... parameters to merge
-#' @export
 #' @author Maciej Pajak \email{m.pajak@@sms.ed.ac.uk}  
-mergeRename <- function(...) {
+.mergeRename <- function(...) {
   merged <- merge(...)
   colnames(merged) <- c(colnames(merged)[1],paste('V',1:(length(names(merged))-1),sep=''))
   return(merged)
 }
-
 

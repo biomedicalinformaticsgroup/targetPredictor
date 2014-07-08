@@ -1,8 +1,8 @@
 Package: targetPredictor
 Type: Package
 Title: Integration of ranked miRNA target predictions from multiple sources
-Version: 0.99.0
-Date: 2014-05-28
+Version: 0.99.1
+Date: 2014-07-07
 Author: Maciej Pajak, Ian Simpson
 Maintainer: Maciej Pajak <m.pajak@sms.ed.ac.uk>
 Description: The package facilitates implementation of workflows requiring miRNA predictions, it allows to integrate ranked miRNA target predictions from multiple sources available online and aggregate them with various methods which improves quality of predictions above any of the single sources. Currently predictions are available for Homo sapiens, Mus musculus and Rattus norvegicus (the last one through homology translation).
@@ -11,6 +11,6 @@ Depends: R (>= 3.0.0), targetPredictor.db
 Imports: stringr, plyr, targetPredictor.db
 Suggests: topGO, org.Hs.eg.db
 Collate: targetpredictor.R
-BiocViews: miRNA
+BiocViews: miRNA, Software, Classification
 Roxygen: list(wrap = FALSE)
 
