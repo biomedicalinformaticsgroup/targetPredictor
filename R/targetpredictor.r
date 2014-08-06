@@ -4,7 +4,7 @@
 
 require(stringr)    #string operations
 require(plyr)       #dataframe operations
-require(targetPredictor.db) #DATA
+require(targetPredictor.db) #data
 
 options(gsubfn.engine = "R")
 
@@ -67,7 +67,7 @@ getPredictedTargets <- function(mirna, sources=c('pictar','diana','targetscan','
     return(NULL)
   }
    
-  conL <- targetPredictor.db:::getTpConnection()
+  #conL <- targetPredictor.db:::.getTpConnection()
   n_sources <- length(sources)
   
   if (n_sources<min_src) {
@@ -95,7 +95,7 @@ getPredictedTargets <- function(mirna, sources=c('pictar','diana','targetscan','
   }
 
   for (src in sources) {
-    l_outputs[[src]] <- getTargetsFromSource(mirna, species, conL, source = src)
+    l_outputs[[src]] <- getTargetsFromSource(mirna, species, source = src)
   }
   
   #it creates non-unique colnames, hence warning surpression
@@ -117,19 +117,41 @@ getPredictedTargets <- function(mirna, sources=c('pictar','diana','targetscan','
   
   merged.scores <- merged.scores[,valid_srcs]
   
-  if (n_valid_srcs>1) {
-    target_found <- rowSums(!is.na(merged.scores[,2:(n_valid_srcs+1)])) #n_sources
+  #take over by ranking function.
+  result <- aggregateRanks(merged.scores, n_valid_srcs, min_src, method = method, promote=promote)
+  
+  return(result)
+}
+
+
+####################
+#  Ranking function
+####################
+#' @title Auxiliary targetPredictor functions
+#'
+#' @details This function performs aggregation phase of target prediction in getPredictedTargets()
+#' @param ranks data.frame with ordered scored
+#' @param n_valid_srcs number of valid sources in the dataset
+#' @param min_srcs minimum acceptable number fo sources
+#' @param method 'min','max', or 'geom'
+#' @param promote add weights to improve accuracy of the method, default TRUE
+#' @return data.frame object with aggregate ranks
+#' @author Maciej Pajak \email{m.pajak@@sms.ed.ac.uk} 
+aggregateRanks <- function(ranks, n_valid_srcs, min_src, method = 'min', promote=TRUE) {
+
+    if (n_valid_srcs>1) {
+    target_found <- rowSums(!is.na(ranks[,2:(n_valid_srcs+1)])) #n_sources
   } else {
-    target_found <- 1*(!is.na(merged.scores[,2:(n_valid_srcs+1)])) #n_sources
+    target_found <- 1*(!is.na(ranks[,2:(n_valid_srcs+1)])) #n_sources
   }
   
-  merged.scores <- merged.scores[target_found>=min_src,]
-  merged.scores <- merged.scores[!duplicated(merged.scores$GeneID),]
-  merged.scores <- merged.scores[!is.na(merged.scores$GeneID),]
+  ranks <- ranks[target_found>=min_src,]
+  ranks <- ranks[!duplicated(ranks$GeneID),]
+  ranks <- ranks[!is.na(ranks$GeneID),]
   
-  row.names(merged.scores) <- merged.scores$GeneID
+  row.names(ranks) <- ranks$GeneID
   
-  data1 <- merged.scores[,2:(n_valid_srcs+1)] #n_sources
+  data1 <- ranks[,2:(n_valid_srcs+1)] #n_sources
   data1 <- as.data.frame(data1)
   num.gene <- dim(data1)[1]
   
@@ -146,10 +168,31 @@ getPredictedTargets <- function(mirna, sources=c('pictar','diana','targetscan','
   
   #we need to reverse rank them
   rank_ind <- apply(data1, 2, function(x) (num.gene+1) - rank(x, ties.method='average', na.last = FALSE))
-  num.rank <- apply(is.na(data1) == FALSE, 1, sum)
+  
   
   if (method=='geom') {
+        result = .aggregateGeom(data1, rank_ind, promote)
+    }  else if (method=='max') {
+        result = .aggregateMinMax(data1, rank_ind, minmax=method)
+    } else  { #even if it's something invalid, still use min
+        result = .aggregateMinMax(data1, rank_ind, minmax=method)
+    } #more methods possible to add, so far geom suffices and scores well
+  
+    colnames(result) <- c(paste('source_',1:n_valid_srcs,sep=''),'rank_product','rank_final') #coating
+    return(result)
+
+}
+
+
+
+#####################
+#  Auxiliary
+#####################
+ 
+
+.aggregateGeom <- function(data1, rank_ind, promote=TRUE) {
     rank_ind[is.na(data1)] <- 1
+    num.rank <- apply(is.na(data1) == FALSE, 1, sum)
     if (promote==TRUE) {
       rank_mean <- (1/num.rank)*(apply(rank_ind, 1, prod))^(1/num.rank)
     } else {
@@ -159,36 +202,23 @@ getPredictedTargets <- function(mirna, sources=c('pictar','diana','targetscan','
     rank_final <- rank(rank_mean)
     rank_ind[is.na(data1)] <- NA
     result <- cbind(rank_ind,rank_mean,rank_final)  
-     result <- result[order(result[,'rank_final']),]
-  }  else if (method=='max') {
+    result <- result[order(result[,'rank_final']),]
+    return(result)
+}
+
+.aggregateMinMax <- function(data1, rank_ind, minmax='min') {
     rank_ind[is.na(data1)] <- NA
-    rank_mean <- apply(rank_ind, 1, max, na.rm=TRUE)
+    if (minmax=='max') {
+        rank_mean <- apply(rank_ind, 1, max, na.rm=TRUE)
+    } else {
+        rank_mean <- apply(rank_ind, 1, min, na.rm=TRUE)
+    }
     rank_final <- rank(rank_mean)
     result <- cbind(rank_ind,rank_mean,rank_final)
     result <- result[order(result[,'rank_final']),]
-  } else  { #even if it's something invalid, still use min
-    rank_ind[is.na(data1)] <- NA
-    rank_mean <- apply(rank_ind, 1, min, na.rm=TRUE)
-    rank_final <- rank(rank_mean)
-    result <- cbind(rank_ind,rank_mean,rank_final)
-    result <- result[order(result[,'rank_final']),]    
-  } 
-  
-  dbDisconnect(conL)
-  colnames(result) <- c(paste('source_',1:n_valid_srcs,sep=''),'rank_product','rank_final') #coating
-  return(result)
 }
 
 
-
-#####################
-#  Auxiliary
-#####################
-#' @title Auxiliary internal TargetPredictor functions
-#'
-#' @details This function is not meant to be called directly by the user
-#' @param ... parameters to merge
-#' @author Maciej Pajak \email{m.pajak@@sms.ed.ac.uk}  
 .mergeRename <- function(...) {
   merged <- merge(...)
   colnames(merged) <- c(colnames(merged)[1],paste('V',1:(length(names(merged))-1),sep=''))
